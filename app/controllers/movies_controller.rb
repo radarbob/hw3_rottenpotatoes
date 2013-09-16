@@ -8,12 +8,14 @@ class MoviesController < ApplicationController
 
   def index
     sort = params[:sort] || session[:sort]
+    
     case sort
     when 'title'
       ordering,@title_header = {:order => :title}, 'hilite'
     when 'release_date'
       ordering,@date_header = {:order => :release_date}, 'hilite'
     end
+    
     @all_ratings = Movie.all_ratings
     @selected_ratings = params[:ratings] || session[:ratings] || {}
     
@@ -26,29 +28,47 @@ class MoviesController < ApplicationController
       session[:ratings] = @selected_ratings
       redirect_to :sort => sort, :ratings => @selected_ratings and return
     end
+    
     @movies = Movie.find_all_by_rating(@selected_ratings.keys, ordering)
   end
+
 
   def new
     # default: render 'new' template
   end
 
-  def create
-    @movie = Movie.create!(params[:movie])
+
+def create
+  @movie = Movie.new(params[:movie])
+  if @movie.save
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
+  else
+    render 'new' # note, 'new' template can access @movie's field values!
   end
+end
+
+
+def update
+  @movie = Movie.find params[:id]
+  if @movie.update_attributes(params[:movie])
+    flash[:notice] = "#{@movie.title} was successfully updated."
+    redirect_to movie_path(@movie)
+  else
+    render 'edit' # note, 'edit' template can access @movie's field values!
+  end
+end
+
+# as a reminder, here is the original 'new' method:
+def new
+  @movie = Movie.new
+end
+
 
   def edit
     @movie = Movie.find params[:id]
   end
 
-  def update
-    @movie = Movie.find params[:id]
-    @movie.update_attributes!(params[:movie])
-    flash[:notice] = "#{@movie.title} was successfully updated."
-    redirect_to movie_path(@movie)
-  end
 
   def destroy
     @movie = Movie.find(params[:id])
